@@ -2,6 +2,7 @@ package me.proton.android.lumo
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.webkit.WebView
@@ -35,6 +36,8 @@ import me.proton.android.lumo.config.LumoConfig
 import me.proton.android.lumo.managers.WebViewManager
 import me.proton.android.lumo.navigation.NavRoutes
 import me.proton.android.lumo.navigation.paymentRoutes
+import me.proton.android.lumo.newchat.NewChatRequest
+import me.proton.android.lumo.newchat.toNewChatRequest
 import me.proton.android.lumo.permission.rememberSinglePermission
 import me.proton.android.lumo.review.InAppReviewManager
 import me.proton.android.lumo.ui.components.ChatScreen
@@ -70,6 +73,7 @@ class MainActivity : ComponentActivity() {
     lateinit var inAppReviewManager: InAppReviewManager
     private val viewModel: MainActivityViewModel by viewModels()
     private lateinit var webViewManager: WebViewManager
+    private var pendingNewChatRequest: NewChatRequest? = null
 
     @SuppressLint("StateFlowValueCalledInComposition")
     @OptIn(ExperimentalMaterial3Api::class)
@@ -113,6 +117,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             MainScreen(lumoChromeClient)
         }
+
+        handleIncomingIntent(intent)
     }
 
     @Composable
@@ -265,6 +271,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(uiState.hasSeenLumoContainer) {
             if (uiState.hasSeenLumoContainer) {
                 webView.clearHistory()
+                consumePendingNewChatRequest()
             }
         }
 
@@ -335,6 +342,28 @@ class MainActivity : ComponentActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         webViewManager.invalidate()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        val request = intent.toNewChatRequest() ?: return
+        pendingNewChatRequest = request
+        consumePendingNewChatRequest()
+    }
+
+    private fun consumePendingNewChatRequest() {
+        val request = pendingNewChatRequest ?: return
+        if (!viewModel.uiState.value.hasSeenLumoContainer) {
+            Timber.tag(TAG).i("Deferring new-chat intent handling until Lumo container is visible")
+            return
+        }
+        pendingNewChatRequest = null
+        request.prompt?.let(webBridge::injectSpeechOutput) ?: webViewManager.loadUrl(LumoConfig.LUMO_URL)
     }
 
     private fun showToast(uiText: UiText) {
