@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import me.proton.android.lumo.R
 import me.proton.android.lumo.speech.SpeechRecognitionManager.Engine
 import me.proton.android.lumo.ui.text.UiText
+import me.proton.android.lumo.utils.formatTextForJsInjection
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -139,13 +140,7 @@ class SpeechViewModel @Inject constructor(
         destroySpeechRecognizer()
 
         if (transcript.isNotEmpty()) {
-            val escaped = transcript
-                .replace("\\", "\\\\") // Must replace backslash first!
-                .replace("\"", "\\\"") // Escape double quotes
-                .replace("'", "\\'")   // Escape single quotes (optional but safe)
-                .replace("\n", "\\n")  // Escape newlines
-                .replace("\r", "\\r")  // Escape carriage returns
-            speechRepository.injectText("\"$escaped\"")
+            speechRepository.injectText(formatTextForJsInjection(transcript))
         } else {
             Timber.tag(TAG).i(" Skipping submission, empty transcript ")
             ""

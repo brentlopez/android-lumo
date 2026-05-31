@@ -2,6 +2,7 @@ package me.proton.android.lumo
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.webkit.WebView
@@ -46,6 +47,8 @@ import me.proton.android.lumo.ui.text.UiText
 import me.proton.android.lumo.ui.theme.AppStyle
 import me.proton.android.lumo.ui.theme.LumoTheme
 import me.proton.android.lumo.usecase.IsPaymentAvailableUseCase
+import me.proton.android.lumo.utils.extractPromptText
+import me.proton.android.lumo.utils.formatTextForJsInjection
 import me.proton.android.lumo.utils.openExternalUrl
 import me.proton.android.lumo.utils.openSettings
 import me.proton.android.lumo.webview.LumoChromeClient
@@ -110,8 +113,31 @@ class MainActivity : ComponentActivity() {
         // Trigger the initial network connectivity check (independent of billing)
         viewModel.performInitialNetworkCheck()
 
+        // Handle a prompt carried by the launching intent (e.g. shared/selected text).
+        handleIntent(intent, isColdStart = true)
+
         setContent {
             MainScreen(lumoChromeClient)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent, isColdStart = false)
+    }
+
+    /**
+     * Extracts a prompt from [intent] and starts a new chat with it. On a cold start the initial
+     * page already loads a fresh chat, so we only reload the Lumo URL when the activity was already
+     * running to make sure the prompt lands in a new conversation.
+     */
+    private fun handleIntent(intent: Intent, isColdStart: Boolean) {
+        val prompt = intent.extractPromptText() ?: return
+        Timber.tag(TAG).i("Received prompt from intent (coldStart=$isColdStart)")
+        viewModel.onPromptReceived(prompt)
+        if (!isColdStart) {
+            webViewManager.loadUrl(LumoConfig.LUMO_URL)
         }
     }
 
@@ -243,6 +269,11 @@ class MainActivity : ComponentActivity() {
                         event.missingPermission
                     )
                 )
+            }
+
+            is MainUiEvent.InjectPrompt -> {
+                Timber.tag(TAG).i("Injecting prompt from intent into chat")
+                webBridge.injectSpeechOutput(formatTextForJsInjection(event.prompt))
             }
         }
     }
