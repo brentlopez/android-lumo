@@ -191,8 +191,8 @@ fun injectEssentialJavascript(webView: WebView) {
                 }, 500);
 
                 // Define insertPromptAndSubmit globally
-                window.insertPromptAndSubmit = function(prompt) {
-                    console.log('Attempting to insert prompt: ' + prompt);
+                window.insertPromptAndSubmit = function(prompt, submit) {
+                    console.log('Attempting to insert prompt: ' + prompt + ' (submit: ' + submit + ')');
                     
                     // Start programmatic operation to prevent keyboard positioning
                     if (window.startProgrammaticOperation) {
@@ -233,6 +233,24 @@ fun injectEssentialJavascript(webView: WebView) {
                             sel.removeAllRanges();
                             sel.addRange(range);
                             
+                            // Notify the editor of the programmatic change so the framework
+                            // updates its state (e.g. enables the send button).
+                            editor.dispatchEvent(new Event('input', { bubbles: true }));
+
+                            // Optionally submit the prompt by dispatching an Enter keydown.
+                            if (submit) {
+                                console.log('Submitting prompt via Enter key');
+                                const enterEvent = new KeyboardEvent('keydown', {
+                                    key: 'Enter',
+                                    code: 'Enter',
+                                    keyCode: 13,
+                                    which: 13,
+                                    bubbles: true,
+                                    cancelable: true
+                                });
+                                editor.dispatchEvent(enterEvent);
+                            }
+
                             if (window.endProgrammaticOperation) {
                                 window.endProgrammaticOperation();
                             }
@@ -1373,11 +1391,12 @@ fun injectUpgradeLinkHider(webView: WebView) {
 fun injectSpokenText(
     webView: WebView,
     text: String,
+    submit: Boolean = false,
 ) {
     val js = """
         (function() {
             if (typeof window.insertPromptAndSubmit === 'function') {
-                return window.insertPromptAndSubmit($text);
+                return window.insertPromptAndSubmit($text, $submit);
             } else {
                 console.error('insertPromptAndSubmit function not found');
                 return 'Error: insertPromptAndSubmit not found';

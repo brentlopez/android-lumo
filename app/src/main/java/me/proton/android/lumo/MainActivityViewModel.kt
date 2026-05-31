@@ -52,7 +52,7 @@ class MainActivityViewModel @Inject constructor(
         class ShowPaymentDialog(val paymentEvent: PaymentEvent = PaymentEvent.Default) : UiEvent()
         object ShowSpeechSheet : UiEvent()
         data class MissingPermission(val missingPermission: String) : UiEvent()
-        data class InjectPrompt(val prompt: String) : UiEvent()
+        data class InjectPrompt(val prompt: String, val submit: Boolean = false) : UiEvent()
     }
 
     enum class PaymentEvent {
@@ -97,6 +97,9 @@ class MainActivityViewModel @Inject constructor(
 
     // Prompt received via an incoming intent, injected once the Lumo chat is ready.
     private var pendingPrompt: String? = null
+
+    // Whether [pendingPrompt] should be submitted automatically once injected.
+    private var pendingSubmit: Boolean = false
 
     init {
         // Don't call performInitialNetworkCheck here, call from Activity onCreate
@@ -190,14 +193,17 @@ class MainActivityViewModel @Inject constructor(
      * Lumo container becomes visible (see [WebEvent.LumoContainerVisible]), which happens both on
      * the initial load and after the chat is reloaded to start a fresh conversation.
      */
-    fun onPromptReceived(prompt: String) {
+    fun onPromptReceived(prompt: String, submit: Boolean = false) {
         pendingPrompt = prompt
+        pendingSubmit = submit
     }
 
     private fun injectPendingPrompt() {
         val prompt = pendingPrompt ?: return
+        val submit = pendingSubmit
         pendingPrompt = null
-        _eventChannel.trySend(UiEvent.InjectPrompt(prompt))
+        pendingSubmit = false
+        _eventChannel.trySend(UiEvent.InjectPrompt(prompt, submit))
     }
 
     fun startVoiceEntry() {

@@ -48,6 +48,7 @@ import me.proton.android.lumo.ui.theme.AppStyle
 import me.proton.android.lumo.ui.theme.LumoTheme
 import me.proton.android.lumo.usecase.IsPaymentAvailableUseCase
 import me.proton.android.lumo.utils.extractPromptText
+import me.proton.android.lumo.utils.extractShouldSubmit
 import me.proton.android.lumo.utils.formatTextForJsInjection
 import me.proton.android.lumo.utils.openExternalUrl
 import me.proton.android.lumo.utils.openSettings
@@ -134,8 +135,9 @@ class MainActivity : ComponentActivity() {
      */
     private fun handleIntent(intent: Intent, isColdStart: Boolean) {
         val prompt = intent.extractPromptText() ?: return
-        Timber.tag(TAG).i("Received prompt from intent (coldStart=$isColdStart)")
-        viewModel.onPromptReceived(prompt)
+        val shouldSubmit = intent.extractShouldSubmit()
+        Timber.tag(TAG).i("Received prompt from intent (coldStart=$isColdStart, submit=$shouldSubmit)")
+        viewModel.onPromptReceived(prompt, shouldSubmit)
         if (!isColdStart) {
             webViewManager.loadUrl(LumoConfig.LUMO_URL)
         }
@@ -272,8 +274,8 @@ class MainActivity : ComponentActivity() {
             }
 
             is MainUiEvent.InjectPrompt -> {
-                Timber.tag(TAG).i("Injecting prompt from intent into chat")
-                webBridge.injectSpeechOutput(formatTextForJsInjection(event.prompt))
+                Timber.tag(TAG).i("Injecting prompt from intent into chat (submit=${event.submit})")
+                webBridge.injectSpeechOutput(formatTextForJsInjection(event.prompt), event.submit)
             }
         }
     }

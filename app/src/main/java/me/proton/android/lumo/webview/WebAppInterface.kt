@@ -67,10 +67,10 @@ open class WebAppInterface {
         injectTheme(webView = webView, theme = theme, mode = mode)
     }
 
-    fun injectSpeechOutput(spokenText: String) {
+    fun injectSpeechOutput(spokenText: String, submit: Boolean = false) {
         val webView = webView ?: error("WebView not attached")
 
-        injectSpokenText(webView, spokenText)
+        injectSpokenText(webView, spokenText, submit)
     }
 
     @JavascriptInterface
