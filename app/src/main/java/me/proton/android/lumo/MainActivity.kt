@@ -2,6 +2,7 @@ package me.proton.android.lumo
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.webkit.WebView
@@ -112,6 +113,28 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MainScreen(lumoChromeClient)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Keep getIntent() in sync so any later reads see the most recent intent.
+        setIntent(intent)
+        handleNewChatIntent(intent)
+    }
+
+    /**
+     * Opens a fresh Lumo conversation when the activity is (re)launched from the
+     * home screen widget. On a cold start the WebView already loads the Lumo URL,
+     * so this only needs to reset an already-running session.
+     */
+    private fun handleNewChatIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_START_NEW_CHAT, false) == true) {
+            // Consume the flag so a configuration change or restore doesn't retrigger it.
+            intent.removeExtra(EXTRA_START_NEW_CHAT)
+            Timber.tag(TAG).i("Starting a new chat from widget")
+            webViewManager.loadUrl(LumoConfig.LUMO_URL)
+            webViewManager.clearHistory()
         }
     }
 
@@ -347,5 +370,11 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val TAG = "MainActivity"
+
+        /** Intent action used by the home screen widget to open a new chat. */
+        const val ACTION_START_NEW_CHAT = "me.proton.android.lumo.action.START_NEW_CHAT"
+
+        /** Intent extra flag requesting that a fresh Lumo conversation be started. */
+        const val EXTRA_START_NEW_CHAT = "me.proton.android.lumo.extra.START_NEW_CHAT"
     }
 }

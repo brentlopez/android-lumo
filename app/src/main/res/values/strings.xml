@@ -167,4 +167,10 @@
     <string name="error_open_external_link">Can\'t open the external link</string>
     <string name="error_open_file_chooser">Can\'t open the file chooser</string>
 
+    <!-- Home screen widget -->
+    <string name="widget_new_chat_label" tools:ignore="MissingTranslation">Lumo new chat</string>
+    <string name="widget_new_chat_description" tools:ignore="MissingTranslation">Start a new chat with Lumo.</string>
+    <string name="widget_new_chat_title" tools:ignore="MissingTranslation">New chat</string>
+    <string name="widget_new_chat_button_desc" tools:ignore="MissingTranslation">Open a new Lumo chat</string>
+
 </resources>
