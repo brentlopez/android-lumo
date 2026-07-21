@@ -137,8 +137,6 @@ class MainActivity : ComponentActivity() {
      */
     private fun handleNewChatIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_START_NEW_CHAT, false) == true) {
-            // Consume the flag so the same intent object isn't handled twice.
-            intent.removeExtra(EXTRA_START_NEW_CHAT)
             Timber.tag(TAG).i("Starting a new chat from widget")
             webViewManager.loadUrl(LumoConfig.LUMO_URL)
             webViewManager.clearHistory()
