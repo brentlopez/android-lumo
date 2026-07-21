@@ -114,6 +114,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             MainScreen(lumoChromeClient)
         }
+
+        // Handle a widget launch that arrives as the initial (cold-start) intent.
+        handleNewChatIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
