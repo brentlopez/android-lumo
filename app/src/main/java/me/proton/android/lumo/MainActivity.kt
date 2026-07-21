@@ -115,8 +115,12 @@ class MainActivity : ComponentActivity() {
             MainScreen(lumoChromeClient)
         }
 
-        // Handle a widget launch that arrives as the initial (cold-start) intent.
-        handleNewChatIntent(intent)
+        // Only handle the launching intent on first creation; on a later
+        // recreation (e.g. night-mode/locale change) the original intent is
+        // redelivered and must not restart the chat again.
+        if (savedInstanceState == null) {
+            handleNewChatIntent(intent)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -133,7 +137,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun handleNewChatIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_START_NEW_CHAT, false) == true) {
-            // Consume the flag so a configuration change or restore doesn't retrigger it.
+            // Consume the flag so the same intent object isn't handled twice.
             intent.removeExtra(EXTRA_START_NEW_CHAT)
             Timber.tag(TAG).i("Starting a new chat from widget")
             webViewManager.loadUrl(LumoConfig.LUMO_URL)
